@@ -1,0 +1,5 @@
+llama-server가 배포되었다. 모델 적재가 끝나야 Ready가 된다.
+
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "llama-server.fullname" . }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "llama-server.fullname" . }} 8080:{{ .Values.service.port }}
+  curl -s localhost:8080/health

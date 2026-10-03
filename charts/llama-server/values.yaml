@@ -1,0 +1,107 @@
+replicaCount: 1
+
+image:
+  # ECR 주소는 배포 워크플로가 --set image.repository=... 로 넣는다.
+  repository: cpu-sllm-k8s
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# llama-server 설정. ConfigMap을 거쳐 LLAMA_ARG_* 환경변수로 들어간다.
+llama:
+  # 생성 스레드(-t). CPU limit보다 크게 잡으면 CFS 스로틀링이 생긴다.
+  threads: 2
+  # 프롬프트 처리 스레드(-tb). 환경변수가 없어 컨테이너 인자로 넘긴다. 비워 두면 threads와 같다.
+  threadsBatch: ""
+  # 동시 처리 슬롯(-np)
+  parallel: 2
+  # 전체 컨텍스트(-c). 슬롯이 나눠 쓴다.
+  ctxSize: 4096
+  contBatching: true
+  # 웹 UI는 측정에 필요 없어 끈다.
+  webui: false
+
+resources:
+  # requests = limits 이면 QoS Guaranteed. HPA 사용률은 requests 기준이다.
+  requests:
+    cpu: "2"
+    memory: 3Gi
+  limits:
+    cpu: "2"
+    memory: 3Gi
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# 모델 적재 시간 동안 /health는 503을 돌려준다.
+# startupProbe가 periodSeconds × failureThreshold(5s × 60 = 300s)까지 기다린 뒤 liveness가 넘겨받는다.
+probes:
+  startup:
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 60
+  readiness:
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  liveness:
+    periodSeconds: 10
+    # 생성 중에는 HTTP 응답이 늦을 수 있어 여유를 둔다.
+    timeoutSeconds: 5
+    failureThreshold: 6
+
+# 롤링 업데이트 중 서비스 용량이 줄지 않게 하나씩 늘리고 줄인다.
+strategy:
+  maxSurge: 1
+  maxUnavailable: 0
+
+terminationGracePeriodSeconds: 60
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+
+# kube-prometheus-stack이 설치된 클러스터에서만 켠다(ServiceMonitor CRD 필요).
+serviceMonitor:
+  enabled: false
+  interval: 15s
+  labels: {}
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]

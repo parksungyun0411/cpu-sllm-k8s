@@ -1,0 +1,6 @@
+apiVersion: v2
+name: llama-server
+description: CPU 전용 노드에서 llama.cpp llama-server로 4bit GGUF 소형 모델을 서빙한다.
+type: application
+version: 0.1.0
+appVersion: "b11347"
