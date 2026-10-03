@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# 측정 원자료(용량이 커서 커밋하지 않는다). 정리된 결과는 reports/에 둔다.
+results/
+
+# 모델 파일
+*.gguf
+
+# 로컬 설정·자격 증명
+.env
+*.kubeconfig
+kubeconfig*
+
+.DS_Store
+.omc/
