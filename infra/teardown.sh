@@ -11,9 +11,10 @@ NAMESPACE="${NAMESPACE:-llm}"
 
 if aws eks describe-cluster --region "$REGION" --name "$CLUSTER" >/dev/null 2>&1; then
   # LoadBalancer 서비스나 PVC가 남아 있으면 ELB·EBS가 클러스터 삭제 뒤에도 남는다. 먼저 정리한다.
-  helm uninstall llama -n "$NAMESPACE" 2>/dev/null || true
+  helm uninstall llm -n "$NAMESPACE" 2>/dev/null || true
   helm uninstall kps -n monitoring 2>/dev/null || true
-  kubectl delete svc --all-namespaces --field-selector spec.type=LoadBalancer --ignore-not-found || true
+  kubectl get svc -A -o jsonpath='{range .items[?(@.spec.type=="LoadBalancer")]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' \
+    | while read -r ns name; do [[ -n "$name" ]] && kubectl -n "$ns" delete svc "$name"; done || true
   kubectl delete pvc --all -n monitoring --ignore-not-found || true
   eksctl delete cluster --region "$REGION" --name "$CLUSTER" --wait
 else
