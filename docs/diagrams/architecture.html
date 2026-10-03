@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>cpu-sllm-k8s · 아키텍처</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #f3f4f6; }
+  body {
+    font-family: "Apple SD Gothic Neo", "Pretendard", -apple-system, system-ui, "Noto Sans KR", sans-serif;
+    -webkit-font-smoothing: antialiased; padding: 28px;
+  }
+  .sheet { width: 960px; background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px 30px; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; }
+  .head .t { font-size: 15px; font-weight: 800; color: #111827; }
+  .head .t span { color: #9ca3af; font-weight: 700; }
+  .head .tag { font-size: 11.5px; font-weight: 700; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 999px; padding: 3px 10px; }
+
+  .row { display: flex; gap: 14px; align-items: stretch; }
+  .side { flex: 0 0 92px; display: flex; flex-direction: column; justify-content: center; }
+  .side .en { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: #6b7280; }
+  .side .ko { font-size: 13px; font-weight: 700; color: #374151; margin-top: 2px; }
+  .lane { flex: 1; display: flex; gap: 10px; align-items: center; border: 1.5px solid #e5e7eb; border-radius: 12px; background: #fafafa; padding: 12px 14px; }
+  .box { flex: 1 1 0; min-width: 0; background: #fff; border: 1.5px solid #d1d5db; border-radius: 9px; padding: 9px 12px; color: #1f2937; }
+  .box b { display: block; font-size: 14.5px; font-weight: 800; }
+  .box i { display: block; font-style: normal; font-size: 11.5px; color: #6b7280; margin-top: 3px; }
+  .wide { flex: 2 1 0; }
+  .arr { color: #9ca3af; font-size: 17px; flex: 0 0 auto; }
+  .down { color: #9ca3af; font-size: 12px; font-weight: 700; padding: 5px 0 5px 106px; }
+
+  .ci  { background: #f8fafc; border-color: #cbd5e1; }
+  .dep { background: #eef2ff; border-color: #c7d2fe; }
+  .dep b { color: #3730a3; }
+
+  .cluster { flex: 1; border: 1.5px solid #93c5fd; border-radius: 12px; background: #eff6ff; padding: 12px 14px; }
+  .cluster .cap { font-size: 11.5px; font-weight: 700; color: #1d4ed8; margin-bottom: 9px; }
+  .cluster .inner { display: flex; gap: 10px; align-items: center; }
+  .pod { border-color: #60a5fa; }
+  .pod b { color: #1e3a8a; }
+
+  .measure { background: #ecfdf5; border-color: #a7f3d0; }
+  .measure b { color: #065f46; }
+  .out { background: #f0fdf4; border-color: #86efac; }
+  .out b { color: #166534; }
+</style>
+</head>
+<body>
+  <div class="sheet" id="cap">
+    <div class="head">
+      <div class="t">cpu-sllm-k8s <span>· 빌드 · 배포 · 측정 흐름</span></div>
+      <div class="tag">EKS 배포·측정 전</div>
+    </div>
+
+    <div class="row">
+      <div class="side"><div class="en">BUILD</div><div class="ko">이미지</div></div>
+      <div class="lane">
+        <div class="box"><b>Hugging Face</b><i>Qwen2.5-1.5B-Instruct Q4_K_M · 커밋·sha256 고정</i></div>
+        <div class="arr">→</div>
+        <div class="box wide"><b>멀티스테이지 Dockerfile</b><i>1단계 모델 받기·sha256 검증 → 2단계 llama.cpp server-b11347</i></div>
+        <div class="arr">→</div>
+        <div class="box"><b>ECR</b><i>태그 = 커밋 SHA</i></div>
+      </div>
+    </div>
+    <div class="down">▼</div>
+
+    <div class="row">
+      <div class="side"><div class="en">PIPELINE</div><div class="ko">GitHub Actions</div></div>
+      <div class="lane">
+        <div class="box ci wide"><b>ci.yml · push</b><i>pytest · ruff · helm lint · kubeconform · hadolint · shellcheck · actionlint · k6 inspect</i></div>
+        <div class="box dep wide"><b>deploy.yml · 수동 실행</b><i>OIDC 역할 → 빌드·ECR 푸시 → helm upgrade · secret 없으면 즉시 중단</i></div>
+      </div>
+    </div>
+    <div class="down">▼ helm upgrade</div>
+
+    <div class="row">
+      <div class="side"><div class="en">CLUSTER</div><div class="ko">EKS 1.35</div></div>
+      <div class="cluster">
+        <div class="cap">관리형 노드 그룹 · c7i.2xlarge × 최대 2 · 네임스페이스 llm</div>
+        <div class="inner">
+          <div class="box"><b>ConfigMap</b><i>LLAMA_ARG_THREADS · N_PARALLEL · CTX_SIZE</i></div>
+          <div class="arr">→</div>
+          <div class="box pod wide"><b>Deployment · llama-server</b><i>모델 내장 · requests/limits · 프로브 3종(/health) · maxUnavailable 0</i></div>
+          <div class="arr">←</div>
+          <div class="box"><b>HPA v2</b><i>CPU 사용률 · metrics-server</i></div>
+          <div class="arr">→</div>
+          <div class="box"><b>Service</b><i>ClusterIP :8080</i></div>
+        </div>
+      </div>
+    </div>
+    <div class="down">▲ 부하 &nbsp;·&nbsp; ▼ 지표</div>
+
+    <div class="row">
+      <div class="side"><div class="en">MEASURE</div><div class="ko">부하 · 수집</div></div>
+      <div class="lane">
+        <div class="box"><b>k6</b><i>고정 동시성 · 계단 도착률</i></div>
+        <div class="box measure"><b>Prometheus</b><i>container_cpu_cfs_* · llamacpp:*</i></div>
+        <div class="arr">→</div>
+        <div class="box measure wide"><b>sllmbench-collect</b><i>레플리카 + PromQL + k6 CSV → grid.csv · timeline.csv</i></div>
+        <div class="arr">→</div>
+        <div class="box out"><b>sllmbench-report</b><i>히트맵 · 시계열 → reports/&lt;run-id&gt;/</i></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
