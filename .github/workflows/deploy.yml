@@ -1,0 +1,88 @@
+name: deploy
+
+# 이미지 빌드 → ECR 푸시 → Helm으로 EKS 배포. 클러스터 비용이 들기 때문에 수동 실행만 받는다.
+# 필요한 설정
+#   secret   AWS_ROLE_ARN       OIDC로 맡을 IAM 역할(infra/iam/setup-github-oidc.sh)
+#   variable AWS_REGION         기본 ap-northeast-2
+#   variable EKS_CLUSTER_NAME   기본 cpu-sllm
+#   variable ECR_REPOSITORY     기본 cpu-sllm-k8s
+on:
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: 배포할 네임스페이스
+        default: llm
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-2' }}
+  EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME || 'cpu-sllm' }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'cpu-sllm-k8s' }}
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: AWS 역할 설정 확인
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          if [ -z "$AWS_ROLE_ARN" ]; then
+            echo "::error title=AWS 역할 없음::secret AWS_ROLE_ARN이 없다. infra/iam/setup-github-oidc.sh로 역할을 만들고 저장소 secret에 넣은 뒤 다시 실행한다."
+            exit 1
+          fi
+          echo "region=${AWS_REGION} cluster=${EKS_CLUSTER_NAME} repository=${ECR_REPOSITORY}"
+
+  release:
+    needs: preflight
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # 장기 액세스 키 없이 GitHub OIDC 토큰으로 역할을 맡는다.
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: 이미지 빌드·푸시
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: azure/setup-helm@v5
+
+      - name: kubeconfig
+        run: aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
+
+      - name: helm upgrade
+        env:
+          NAMESPACE: ${{ inputs.namespace }}
+          IMAGE_REPO: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+        run: |
+          helm upgrade --install llm charts/llama-server -n "$NAMESPACE" \
+            --set image.repository="$IMAGE_REPO" --set image.tag="$GITHUB_SHA" \
+            --wait --timeout 15m
+          kubectl -n "$NAMESPACE" rollout status deploy/llm-llama-server --timeout 5m
+          kubectl -n "$NAMESPACE" get pods -o wide

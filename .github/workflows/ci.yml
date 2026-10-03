@@ -1,0 +1,65 @@
+name: ci
+
+# 클러스터 없이 확인할 수 있는 것만 돈다. AWS 자격 증명을 쓰지 않는다.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest -q
+
+  chart:
+    runs-on: ubuntu-latest
+    env:
+      KUBECONFORM_VERSION: v0.8.0
+      K8S_VERSION: 1.35.0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+      - name: kubeconform 설치
+        run: |
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | tar -xz -C /usr/local/bin kubeconform
+      - name: helm lint
+        run: |
+          helm lint charts/llama-server --strict
+          helm lint charts/llama-server --strict -f experiments/values-hpa.yaml
+      - name: helm template | kubeconform
+        run: |
+          crds='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          for values in charts/llama-server/values.yaml experiments/values-hpa.yaml; do
+            echo "== ${values}"
+            helm template llm charts/llama-server -f "$values" \
+              | kubeconform -strict -summary -kubernetes-version "$K8S_VERSION" \
+                  -schema-location default -schema-location "$crds"
+          done
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hadolint/hadolint-action@v3.5.0
+        with:
+          dockerfile: Dockerfile
+      - name: shellcheck
+        run: shellcheck scripts/*.sh infra/*.sh infra/iam/*.sh
+      - name: actionlint
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+          ./actionlint -color
+      - uses: grafana/setup-k6-action@v1
+      - name: k6 inspect
+        run: |
+          k6 inspect load/k6/constant.js > /dev/null
+          k6 inspect load/k6/stepped.js > /dev/null
