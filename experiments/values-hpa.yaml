@@ -1,0 +1,18 @@
+# HPA 계단 부하 실험. requests=limits(Guaranteed), 사용률은 requests 기준이다.
+llama:
+  threads: 2
+  parallel: 2
+resources:
+  requests:
+    cpu: "2"
+    memory: 3Gi
+  limits:
+    cpu: "2"
+    memory: 3Gi
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+serviceMonitor:
+  enabled: true
