@@ -14,7 +14,9 @@ if aws eks describe-cluster --region "$REGION" --name "$CLUSTER" >/dev/null 2>&1
   helm uninstall llm -n "$NAMESPACE" 2>/dev/null || true
   helm uninstall kps -n monitoring 2>/dev/null || true
   kubectl get svc -A -o jsonpath='{range .items[?(@.spec.type=="LoadBalancer")]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' \
-    | while read -r ns name; do [[ -n "$name" ]] && kubectl -n "$ns" delete svc "$name"; done || true
+    | while read -r ns name; do
+        if [[ -n "$name" ]]; then kubectl -n "$ns" delete svc "$name" || true; fi
+      done
   kubectl delete pvc --all -n monitoring --ignore-not-found || true
   eksctl delete cluster --region "$REGION" --name "$CLUSTER" --wait
 else

@@ -21,7 +21,11 @@ RUN_ID="${RUN_ID:-grid-$(date -u +%Y%m%dT%H%M%SZ)}"
 OUT="results/${RUN_ID}"
 mkdir -p "$OUT"
 
-cleanup() { [[ -n "${PF_PID:-}" ]] && kill "$PF_PID" 2>/dev/null || true; }
+cleanup() {
+  if [[ -n "${PF_PID:-}" ]]; then
+    kill "$PF_PID" 2>/dev/null || true
+  fi
+}
 trap cleanup EXIT
 
 for t in $THREADS; do
