@@ -1,0 +1,4 @@
+timestamp,replicas_desired,replicas_ready,hpa_desired,cpu_cores,throttle_ratio,server_tokens_per_s,requests_processing,requests_deferred
+995,1,1,1,0.5,0.1,1.0,1,0
+1010,2,1,2,1.5,0.3,2.0,2,1
+1025,2,2,2,2.5,0.2,3.0,2,0
