@@ -1,0 +1,16 @@
+# 측정에 필요한 것만 남긴 kube-prometheus-stack 값.
+# cAdvisor의 container_cpu_cfs_* 지표와 llama-server /metrics(ServiceMonitor)를 수집한다.
+alertmanager:
+  enabled: false
+grafana:
+  enabled: false
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 15s
+    retention: 2d
+    # 차트 release 라벨이 없는 ServiceMonitor도 수집한다.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi

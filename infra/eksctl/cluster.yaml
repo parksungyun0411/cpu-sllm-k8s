@@ -1,0 +1,42 @@
+# 측정용 EKS 클러스터. 실습이 끝나면 infra/teardown.sh로 그날 지운다.
+# 생성: eksctl create cluster -f infra/eksctl/cluster.yaml
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: cpu-sllm
+  region: ap-northeast-2
+  version: "1.35"
+  tags:
+    project: cpu-sllm-k8s
+
+# NAT 게이트웨이를 만들지 않고 노드를 퍼블릭 서브넷에 둔다(측정 전용, 비용 절감).
+vpc:
+  nat:
+    gateway: Disable
+
+iam:
+  withOIDC: true
+
+addons:
+  - name: vpc-cni
+  - name: coredns
+  - name: kube-proxy
+  # HPA가 읽는 resource metrics API. EKS 커뮤니티 애드온이다.
+  - name: metrics-server
+
+managedNodeGroups:
+  # 8 vCPU x86 노드. 격자 실험의 CPU limit 최대값(4)과 HPA 최대 파드 수를 함께 담는 최소 크기로 잡았다.
+  # 리전에서 인스턴스 타입 제공 여부와 시간당 요금은 생성 전에 확인한다.
+  - name: cpu-ng
+    instanceType: c7i.2xlarge
+    amiFamily: AmazonLinux2023
+    minSize: 1
+    desiredCapacity: 2
+    maxSize: 2
+    volumeSize: 30
+    privateNetworking: false
+    labels:
+      workload: llm-cpu
+    tags:
+      project: cpu-sllm-k8s
