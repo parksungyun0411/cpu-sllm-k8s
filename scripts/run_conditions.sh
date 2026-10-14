@@ -26,7 +26,9 @@ echo "- 파드 이미지: \`$(kubectl -n "$NAMESPACE" get deploy "$DEPLOY" -o js
 echo "- llama-server: $(kubectl -n "$NAMESPACE" exec "deploy/${DEPLOY}" -- /app/llama-server --version 2>&1 | tr '\n' ' ')"
 echo "- 베이스 이미지(Dockerfile): \`$(sed -n 's/^ARG LLAMA_IMAGE=//p' "$ROOT/Dockerfile")\`"
 echo "- 모델(Dockerfile): $(sed -n 's/^ARG MODEL_REPO=//p' "$ROOT/Dockerfile" | head -1) \`$(sed -n 's/^ARG MODEL_FILE=//p' "$ROOT/Dockerfile" | head -1)\`, 커밋 \`$(sed -n 's/^ARG MODEL_REVISION=//p' "$ROOT/Dockerfile" | head -1)\`, sha256 \`$(sed -n 's/^ARG MODEL_SHA256=//p' "$ROOT/Dockerfile")\`"
-echo "- 저장소 커밋: \`$(git -C "$ROOT" rev-parse --short HEAD)\`$(if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then echo " (커밋하지 않은 변경 있음)"; fi)"
+# 커밋하지 않은 변경이 측정 코드인지 문서인지 구분할 수 있게 경로를 함께 남긴다.
+dirty="$(git -C "$ROOT" status --porcelain | awk '{print $2}' | head -10 | paste -sd ',' - | sed 's/,/, /g')"
+echo "- 저장소 커밋: \`$(git -C "$ROOT" rev-parse --short HEAD)\`$(if [[ -n "$dirty" ]]; then echo " (커밋하지 않은 변경: ${dirty})"; fi)"
 echo "- 부하 발생 호스트: $(uname -sm), k6 $(k6 version | awk '{print $2}')"
 if [[ "$(uname -s)" == "Darwin" ]]; then
   echo "- 호스트 CPU: $(sysctl -n machdep.cpu.brand_string), 성능 코어 $(sysctl -n hw.perflevel0.physicalcpu) + 효율 코어 $(sysctl -n hw.perflevel1.physicalcpu), 메모리 $(( $(sysctl -n hw.memsize) / 1073741824 ))GiB, macOS $(sw_vers -productVersion)"
