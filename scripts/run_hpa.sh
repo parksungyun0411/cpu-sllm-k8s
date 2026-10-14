@@ -27,6 +27,19 @@ helm upgrade --install "$RELEASE" charts/llama-server -n "$NAMESPACE" --create-n
   "${values[@]}" \
   --set image.repository="$IMAGE_REPO" --set image.tag="$IMAGE_TAG" --wait --timeout 10m
 kubectl -n "$NAMESPACE" rollout status "deploy/${DEPLOY}" --timeout 10m
+
+# 직전 실험의 CPU 사용량이 메트릭에 남아 있으면 HPA가 부하 전에 레플리카를 늘려 둔다.
+# 레플리카와 HPA 목표가 minReplicas로 돌아온 뒤에 시작한다(축소 안정화 시간 때문에 몇 분 걸릴 수 있다).
+min="$(kubectl -n "$NAMESPACE" get hpa "$DEPLOY" -o jsonpath='{.spec.minReplicas}')"
+deadline=$(( $(date +%s) + 900 ))
+until [[ "$(kubectl -n "$NAMESPACE" get hpa "$DEPLOY" -o jsonpath='{.status.desiredReplicas}')" == "$min" \
+      && "$(kubectl -n "$NAMESPACE" get deploy "$DEPLOY" -o jsonpath='{.status.replicas}')" == "$min" ]]; do
+  if (( $(date +%s) > deadline )); then
+    echo "15분 안에 레플리카가 ${min}개로 돌아오지 않았다." >&2
+    exit 1
+  fi
+  sleep 15
+done
 scripts/run_conditions.sh "STEPS=${STEPS} (분당 요청 수)" "STEP_DURATION=${STEP_DURATION}" "RAMP=${RAMP}" \
   "COOLDOWN=${COOLDOWN}" "EXTRA_VALUES=${EXTRA_VALUES}" > "${OUT}/conditions.md"
 
