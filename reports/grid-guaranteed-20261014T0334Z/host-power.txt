@@ -1,0 +1,10 @@
+# 호스트 전원 상태 (pmset -g log 발췌)
+
+hw.model: Mac16,13
+실행 구간(UTC): 2026-10-14T03:34:40 ~ 2026-10-14T04:12:50
+발췌 범위: 실행 시작 1시간 전부터 끝까지의 Sleep·Wake·DarkWake·ThermalEvent 줄, Wake Requests 제외 (시각은 기록 그대로)
+
+2026-10-14 12:29:46 +0900 Sleep Entering Sleep state due to 'Clamshell Sleep':TCPKeepAlive=active Using Batt (Charge:71%) 12 secs
+2026-10-14 12:29:58 +0900 DarkWake DarkWake from Deep Idle [CDN] : due to smc.sysState.Wake(0x70070000) USB-C_plug SMC.OutboxNotEmpty nub-spmi-a0.0x3F/ Using BATT (Charge:71%) 0 secs
+2026-10-14 12:29:58 +0900 Wake DarkWake to FullWake from Deep Idle [CDNVA] : due to Notification Using AC (Charge:71%) 5 secs
+2026-10-14 12:30:03 +0900 Sleep Entering DarkWake state due to 'Notification Wake Back to Sleep':TCPKeepAlive=active Using AC (Charge:71%)

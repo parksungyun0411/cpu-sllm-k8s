@@ -1,0 +1,19 @@
+# 호스트 전원 상태 (pmset -g log 발췌)
+
+hw.model: Mac16,13
+실행 구간(UTC): 2026-10-14T06:19:00 ~ 2026-10-14T06:32:10
+발췌 범위: 실행 시작 1시간 전부터 끝까지의 Sleep·Wake·DarkWake·ThermalEvent 줄, Wake Requests 제외 (시각은 기록 그대로)
+
+2026-10-14 14:19:13 +0900 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using AC (Charge:80%) 7 secs
+2026-10-14 14:19:20 +0900 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt SMC.OutboxNotEmpty/ Using AC (Charge:80%) 45 secs
+2026-10-14 14:20:05 +0900 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using AC (Charge:80%) 4 secs
+2026-10-14 14:20:09 +0900 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt SMC.OutboxNotEmpty/ Using AC (Charge:80%) 46 secs
+2026-10-14 14:20:55 +0900 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using AC (Charge:80%) 19 secs
+2026-10-14 14:21:14 +0900 Wake Wake from Deep Idle [CDNVA] : due to smc.sysState.Wake(0x70070000) USB2_wake SMC.OutboxNotEmpty nub-spmi-a0.0x0B/UserActivity Assertion Using AC (Charge:80%) 432 secs
+2026-10-14 14:28:26 +0900 Sleep Entering Sleep state due to 'Idle Sleep':TCPKeepAlive=active Using AC (Charge:80%) 8 secs
+2026-10-14 14:28:34 +0900 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt SMC.OutboxNotEmpty/ Using AC (Charge:80%) 9 secs
+2026-10-14 14:28:42 +0900 ThermalEvent Ignored DarkWake thermal emergency signal TCPKeepAlive=active
+2026-10-14 14:28:43 +0900 Sleep Entering Sleep state due to 'Thermal Emergency Sleep':TCPKeepAlive=inactive Using AC (Charge:80%) 900 secs
+2026-10-14 14:43:43 +0900 DarkWake DarkWake from Deep Idle [CDNPB] : due to NUB.SPMI0.SW3 nub-spmi0.0x02 rtc/Maintenance Using AC (Charge:80%) 51 secs
+2026-10-14 14:44:34 +0900 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=inactive Using AC (Charge:80%) 543 secs
+2026-10-14 14:53:37 +0900 Wake Wake from Deep Idle [CDNVA] : due to smc.sysState.Wake(0x70070000) USB2_wake SMC.OutboxNotEmpty nub-spmi-a0.0x0B/UserActivity Assertion Using AC (Charge:80%)
