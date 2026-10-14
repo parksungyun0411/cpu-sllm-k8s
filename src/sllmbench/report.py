@@ -43,11 +43,40 @@ def _fmt(value, digits: int = 2) -> str:
     return str(value)
 
 
-def markdown_table(df: pd.DataFrame, digits: int = 2) -> str:
+# 표의 열별 소수 자릿수. 여기에 없는 열은 markdown_table의 기본 자릿수를 쓴다.
+DIGITS = {
+    "cpu_limit": 1,
+    "tokens_per_s": 2,
+    "throttle_ratio": 3,
+    "p95_ms": 0,
+    "error_rate": 3,
+    "cpu_cores": 2,
+    "rps": 3,
+    "completed_per_min": 1,
+    "start_s": 0,
+    "end_s": 0,
+    "elapsed_s": 0,
+}
+# 빈 값이 섞여 부동소수로 읽히는 개수 열. 정수로 되돌려 찍는다.
+COUNTS = [
+    "replicas_ready",
+    "hpa_desired",
+    "replicas_ready_start",
+    "replicas_ready_end",
+    "hpa_desired_max",
+    "requests_deferred_max",
+]
+
+
+def markdown_table(df: pd.DataFrame, digits: int = 2, per_column: dict | None = None) -> str:
+    per_column = per_column or {}
+    df = df.astype({c: "Int64" for c in COUNTS if c in df.columns})
+    places = [per_column.get(c, digits) for c in df.columns]
     header = "| " + " | ".join(str(c) for c in df.columns) + " |"
     sep = "|" + "|".join("---" for _ in df.columns) + "|"
     rows = [
-        "| " + " | ".join(_fmt(v, digits) for v in r) + " |" for r in df.itertuples(index=False)
+        "| " + " | ".join(_fmt(v, d) for v, d in zip(r, places)) + " |"
+        for r in df.itertuples(index=False)
     ]
     return "\n".join([header, sep, *rows])
 
@@ -109,7 +138,7 @@ def grid_section(grid: pd.DataFrame, out: Path) -> list[str]:
         lines += [
             f"### {qos}",
             "",
-            markdown_table(g.sort_values(["threads", "cpu_limit"])[cols], 3),
+            markdown_table(g.sort_values(["threads", "cpu_limit"])[cols], 3, DIGITS),
             "",
         ]
     return lines
@@ -167,27 +196,19 @@ def timeline_section(tl: pd.DataFrame, out: Path) -> list[str]:
         "",
         "![HPA timeline](hpa_timeline.png)",
         "",
-        markdown_table(tl[cols], 2),
+        markdown_table(tl[cols], 2, DIGITS),
         "",
     ]
 
 
 def steps_section(steps: pd.DataFrame) -> list[str]:
-    # 샘플이 없는 구간의 빈 값 때문에 부동소수로 읽힌 개수 열을 정수로 되돌린다.
-    counts = [
-        "replicas_ready_start",
-        "replicas_ready_end",
-        "hpa_desired_max",
-        "requests_deferred_max",
-    ]
-    steps = steps.astype({c: "Int64" for c in counts})
     return [
         "## HPA 계단별 요약",
         "",
         "램프 구간을 뺀 계단 구간(start_s~end_s, 부하 시작 기준 초)에 완료된 요청으로 계산했다.",
         "레플리카 수는 그 구간의 첫 샘플과 마지막 샘플이다.",
         "",
-        markdown_table(steps, 2),
+        markdown_table(steps, 2, DIGITS),
         "",
     ]
 

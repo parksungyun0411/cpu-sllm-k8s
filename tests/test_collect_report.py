@@ -197,6 +197,20 @@ def test_poll_writes_rows(tmp_path, monkeypatch):
     assert len(pd.read_csv(out)) == 3
 
 
+def test_markdown_table_per_column_digits_and_counts():
+    df = pd.DataFrame(
+        {
+            "p95_ms": [1234.567, 1.0],
+            "tokens_per_s": [28.164835, 1.0],
+            "replicas_ready": [float("nan"), 2.0],
+        }
+    )
+    assert report.markdown_table(df, 3, report.DIGITS).splitlines()[2:] == [
+        "| 1235 | 28.16 |  |",
+        "| 1 | 1.00 | 2 |",
+    ]
+
+
 def test_markdown_table_blanks_nan():
     df = pd.DataFrame({"a": [1.0, float("nan")], "b": ["x", "y"]})
     assert report.markdown_table(df).splitlines() == [
@@ -253,10 +267,8 @@ def test_build_report_with_steps_scale_and_conditions(tmp_path):
     text = (tmp_path / "report" / "REPORT.md").read_text(encoding="utf-8")
     # 실행 조건은 표보다 앞에 그대로 들어간다.
     assert text.index("- 합성 데이터") < text.index("## HPA 계단별 요약")
-    assert (
-        "| 1 | 4 | 5.00 | 15.00 | 3 | 18.00 | 0.33 | 390.00 | 2.00 | 1 | 1 | 2 | 0.30 | 1 |" in text
-    )
-    assert "| cooldown | 4 | 35.00 | 40.00 | 0 | 0.00 |  |  | 0.00 |  |  |  |  |  |" in text
+    assert "| 1 | 4 | 5 | 15 | 3 | 18.0 | 0.333 | 390 | 2.00 | 1 | 1 | 2 | 0.300 | 1 |" in text
+    assert "| cooldown | 4 | 35 | 40 | 0 | 0.0 |  |  | 0.00 |  |  |  |  |  |" in text
     assert "| 10 | up | 1 | 2 | 1 | 11 |" in text
     assert text.index("## 스케일 시점") < text.index("## HPA 계단 부하 곡선")
 
