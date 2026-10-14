@@ -215,15 +215,16 @@ def steps_section(steps: pd.DataFrame) -> list[str]:
 
 
 def scale_section(scale: pd.DataFrame) -> list[str]:
-    return [
+    lines = [
         "## 스케일 시점",
         "",
         "elapsed_s는 부하 시작부터 HPA의 lastScaleTime까지, pod_created_s와 pod_ready_s는 그 시점부터",
         "새 파드가 만들어지고 Ready가 되기까지 걸린 초다. 원본 시각이 초 단위라 1초 안팎의 오차가 있다.",
         "",
-        markdown_table(scale, 0),
-        "",
     ]
+    if scale.empty:
+        return lines + ["이 실행에서는 HPA가 레플리카 수를 바꾸지 않았다.", ""]
+    return lines + [markdown_table(scale, 0), ""]
 
 
 def build(

@@ -276,6 +276,11 @@ def test_build_report_with_steps_scale_and_conditions(tmp_path):
     assert text.index("## 스케일 시점") < text.index("## HPA 계단 부하 곡선")
 
 
+def test_scale_section_says_when_nothing_scaled():
+    empty = pd.DataFrame(columns=collect.SCALE_COLUMNS)
+    assert "이 실행에서는 HPA가 레플리카 수를 바꾸지 않았다." in report.scale_section(empty)
+
+
 def test_report_cli_requires_input(tmp_path):
     with pytest.raises(SystemExit):
         report.main(["--out", str(tmp_path)])
