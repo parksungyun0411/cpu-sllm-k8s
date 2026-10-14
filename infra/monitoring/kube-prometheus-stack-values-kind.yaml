@@ -1,0 +1,30 @@
+# kind 단일 노드에 맞춘 덮어쓰기. kube-prometheus-stack-values.yaml 뒤에 -f로 붙인다.
+# 수집기가 읽는 것은 kubelet cAdvisor와 llama-server ServiceMonitor뿐이라 나머지 수집 대상과 규칙은 끈다.
+defaultRules:
+  create: false
+kubeApiServer:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+coreDns:
+  enabled: false
+kubeStateMetrics:
+  enabled: false
+nodeExporter:
+  enabled: false
+prometheus:
+  # infra/kind/cluster.yaml이 이 NodePort를 호스트 9090으로 연결한다.
+  service:
+    type: NodePort
+    nodePort: 30090
+  prometheusSpec:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi

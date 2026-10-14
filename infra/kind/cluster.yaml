@@ -1,0 +1,14 @@
+# 로컬 측정용 단일 노드 kind 클러스터. EKS 없이 같은 차트와 실험 스크립트를 한 머신에서 돌린다.
+# 생성: infra/kind/setup.sh
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: cpu-sllm
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # Prometheus NodePort(30090)를 호스트 9090으로 연다.
+      # 실험이 몇 시간 이어지는 동안 kubectl port-forward가 끊겨 수집기 질의가 비는 일을 피한다.
+      - containerPort: 30090
+        hostPort: 9090
+        listenAddress: "127.0.0.1"
+        protocol: TCP

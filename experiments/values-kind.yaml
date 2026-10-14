@@ -1,0 +1,19 @@
+# kind 단일 노드(8 vCPU, 8GiB)에서 돌릴 때 붙이는 덮어쓰기.
+#   EXTRA_VALUES=experiments/values-kind.yaml scripts/run_grid.sh
+image:
+  # infra/kind/setup.sh가 kind load로 노드에 넣은 이미지를 쓴다. 레지스트리에는 없다.
+  pullPolicy: Never
+resources:
+  # 노드 메모리가 8GiB라 3Gi 요청 파드는 2개까지만 스케줄된다. CPU는 실험 스크립트가 --set으로 정한다.
+  requests:
+    memory: 2Gi
+  limits:
+    memory: 2Gi
+# 노드가 하나라 CPU 4코어를 요청하는 파드 둘이 함께 뜰 자리가 없다.
+# 기존 파드를 먼저 내려야 다음 격자 칸의 파드가 스케줄된다.
+strategy:
+  maxSurge: 0
+  maxUnavailable: 1
+autoscaling:
+  # 2코어 파드 4개(8코어)는 시스템 파드 요청을 뺀 노드에 들어가지 않아 마지막 파드가 Pending으로 남는다.
+  maxReplicas: 3
