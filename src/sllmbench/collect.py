@@ -60,6 +60,7 @@ STEP_COLUMNS = [
     "replicas_ready_start",
     "replicas_ready_end",
     "hpa_desired_max",
+    "cpu_cores",
     "throttle_ratio",
     "requests_deferred_max",
 ]
@@ -196,6 +197,7 @@ def build_steps(
                 "replicas_ready_start": c["replicas_ready"].iloc[0] if len(c) else math.nan,
                 "replicas_ready_end": c["replicas_ready"].iloc[-1] if len(c) else math.nan,
                 "hpa_desired_max": c["hpa_desired"].max(),
+                "cpu_cores": c["cpu_cores"].mean(),
                 "throttle_ratio": c["throttle_ratio"].mean(),
                 "requests_deferred_max": c["requests_deferred"].max(),
             }

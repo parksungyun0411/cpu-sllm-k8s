@@ -117,6 +117,7 @@ def test_build_steps():
     assert first["tokens_per_s"] == pytest.approx(20 / 10)
     assert (first["replicas_ready_start"], first["replicas_ready_end"]) == (1, 1)
     assert first["hpa_desired_max"] == 2
+    assert first["cpu_cores"] == pytest.approx(1.5)
     assert first["throttle_ratio"] == pytest.approx(0.3)
     assert first["requests_deferred_max"] == 1
     assert st.loc[1, "replicas_ready_end"] == 2
@@ -267,8 +268,10 @@ def test_build_report_with_steps_scale_and_conditions(tmp_path):
     text = (tmp_path / "report" / "REPORT.md").read_text(encoding="utf-8")
     # 실행 조건은 표보다 앞에 그대로 들어간다.
     assert text.index("- 합성 데이터") < text.index("## HPA 계단별 요약")
-    assert "| 1 | 4 | 5 | 15 | 3 | 18.0 | 0.333 | 390 | 2.00 | 1 | 1 | 2 | 0.300 | 1 |" in text
-    assert "| cooldown | 4 | 35 | 40 | 0 | 0.0 |  |  | 0.00 |  |  |  |  |  |" in text
+    assert (
+        "| 1 | 4 | 5 | 15 | 3 | 18.0 | 0.333 | 390 | 2.00 | 1 | 1 | 2 | 1.50 | 0.300 | 1 |" in text
+    )
+    assert "| cooldown | 4 | 35 | 40 | 0 | 0.0 |  |  | 0.00 |  |  |  |  |  |  |" in text
     assert "| 10 | up | 1 | 2 | 1 | 11 |" in text
     assert text.index("## 스케일 시점") < text.index("## HPA 계단 부하 곡선")
 
