@@ -26,6 +26,20 @@ def _p95(values: pd.Series) -> float:
     return float(values.quantile(0.95)) if len(values) else float("nan")
 
 
+def window_stats(df: pd.DataFrame, seconds: float) -> dict:
+    """seconds 길이 구간 안에 완료된 요청의 수·오류율·p95·생성 토큰 처리량."""
+    dur = df.loc[df["metric_name"] == DURATION, "metric_value"]
+    failed = df.loc[df["metric_name"] == FAILED, "metric_value"]
+    tokens = df.loc[df["metric_name"] == TOKENS, "metric_value"].sum()
+    return {
+        "requests": len(dur),
+        "rps": len(dur) / seconds,
+        "error_rate": float(failed.mean()) if len(failed) else float("nan"),
+        "p95_ms": _p95(dur),
+        "tokens_per_s": tokens / seconds,
+    }
+
+
 def bucket_stats(df: pd.DataFrame, interval_s: int = 15) -> pd.DataFrame:
     """완료 시각 기준 interval_s 초 구간마다 요청 수·오류율·p95·생성 토큰 처리량을 낸다."""
     if df.empty:
@@ -36,19 +50,7 @@ def bucket_stats(df: pd.DataFrame, interval_s: int = 15) -> pd.DataFrame:
     df = df.assign(bucket=((df["timestamp"] - start) // interval_s).astype(int))
     rows = []
     for bucket, g in df.groupby("bucket"):
-        dur = g.loc[g["metric_name"] == DURATION, "metric_value"]
-        failed = g.loc[g["metric_name"] == FAILED, "metric_value"]
-        tokens = g.loc[g["metric_name"] == TOKENS, "metric_value"].sum()
-        rows.append(
-            {
-                "timestamp": start + bucket * interval_s,
-                "requests": len(dur),
-                "rps": len(dur) / interval_s,
-                "error_rate": float(failed.mean()) if len(failed) else float("nan"),
-                "p95_ms": _p95(dur),
-                "tokens_per_s": tokens / interval_s,
-            }
-        )
+        rows.append({"timestamp": start + bucket * interval_s, **window_stats(g, interval_s)})
     return pd.DataFrame(rows)
 
 

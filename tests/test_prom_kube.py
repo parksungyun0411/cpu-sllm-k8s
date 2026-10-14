@@ -1,6 +1,7 @@
 import json
 import math
 import subprocess
+from datetime import UTC, datetime
 
 import pytest
 
@@ -19,6 +20,8 @@ def test_queries_select_namespace_pod_and_container():
     sel = '{namespace="llm",pod=~"llm-llama-server-.*",container="llama-server"}'
     assert f"container_cpu_cfs_throttled_periods_total{sel}[2m]" in q["throttle_ratio"]
     assert f"container_cpu_cfs_periods_total{sel}[2m]" in q["throttle_ratio"]
+    # CPU는 샘플 간격이 고르지 않아도 낮게 나오지 않도록 rate가 아니라 기울기로 구한다.
+    assert q["cpu_cores"] == f"sum(deriv(container_cpu_usage_seconds_total{sel}[2m]))"
     # llama-server 지표에는 container 라벨 조건을 걸지 않는다.
     assert (
         'llamacpp:tokens_predicted_total{namespace="llm",pod=~"llm-llama-server-.*"}'
@@ -86,3 +89,44 @@ def test_replica_status_without_hpa(monkeypatch):
     row = kube.replica_status("llm", "x")
     assert row["replicas_ready"] == 1
     assert math.isnan(row["hpa_desired"])
+
+
+def _at(hour: int, minute: int, second: int) -> float:
+    return datetime(2026, 10, 14, hour, minute, second, tzinfo=UTC).timestamp()
+
+
+HPA_WATCH = """\
+<none>                 1
+<none>                 1
+2026-10-14T05:00:30Z   2
+2026-10-14T05:00:30Z   2
+2026-10-14T05:01:00Z   3
+2026-10-14T05:09:00Z   2
+"""
+
+PODS_WATCH = """\
+llm-a   2026-10-14T04:50:00Z   True     2026-10-14T04:50:10Z
+llm-b   2026-10-14T05:00:30Z   <none>   <none>
+llm-b   2026-10-14T05:00:30Z   False    2026-10-14T05:00:31Z
+llm-b   2026-10-14T05:00:30Z   True     2026-10-14T05:00:42Z
+llm-b   2026-10-14T05:00:30Z   False    2026-10-14T05:09:01Z
+llm-c   2026-10-14T05:00:59Z   False    2026-10-14T05:01:00Z
+"""
+
+
+def test_parse_hpa_watch_keeps_only_rescales():
+    assert kube.parse_hpa_watch(HPA_WATCH) == [
+        {"timestamp": _at(5, 0, 30), "from_replicas": 1, "to_replicas": 2},
+        {"timestamp": _at(5, 1, 0), "from_replicas": 2, "to_replicas": 3},
+        {"timestamp": _at(5, 9, 0), "from_replicas": 3, "to_replicas": 2},
+    ]
+    assert kube.parse_hpa_watch("") == []
+
+
+def test_parse_pods_watch_takes_first_ready_time():
+    pods = kube.parse_pods_watch(PODS_WATCH)
+    assert set(pods) == {"llm-a", "llm-b", "llm-c"}
+    # 종료하면서 Ready가 False로 돌아가도 처음 True가 된 시각을 유지한다.
+    assert pods["llm-b"] == {"created": _at(5, 0, 30), "ready": _at(5, 0, 42)}
+    assert pods["llm-c"]["created"] == _at(5, 0, 59)
+    assert math.isnan(pods["llm-c"]["ready"])

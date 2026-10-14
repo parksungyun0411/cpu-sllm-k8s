@@ -1,7 +1,9 @@
 """grid.csv·timeline.csv를 그림과 표로 바꿔 reports/<run>/ 아래에 둔다.
 
-  sllmbench-report --grid results/<run>/grid.csv --timeline results/<run>/timeline.csv \
+  sllmbench-report --grid results/<run>/grid.csv --conditions results/<run>/conditions.md \
       --out reports/<run>
+  sllmbench-report --timeline results/<run>/timeline.csv --steps results/<run>/steps.csv \
+      --scale results/<run>/scale.csv --conditions results/<run>/conditions.md --out reports/<run>
 """
 
 from __future__ import annotations
@@ -97,6 +99,7 @@ def grid_section(grid: pd.DataFrame, out: Path) -> list[str]:
         cols = [
             "threads",
             "cpu_limit",
+            "requests",
             "tokens_per_s",
             "throttle_ratio",
             "p95_ms",
@@ -169,14 +172,60 @@ def timeline_section(tl: pd.DataFrame, out: Path) -> list[str]:
     ]
 
 
-def build(grid: Path | None, timeline: Path | None, out: Path, title: str) -> Path:
+def steps_section(steps: pd.DataFrame) -> list[str]:
+    # 샘플이 없는 구간의 빈 값 때문에 부동소수로 읽힌 개수 열을 정수로 되돌린다.
+    counts = [
+        "replicas_ready_start",
+        "replicas_ready_end",
+        "hpa_desired_max",
+        "requests_deferred_max",
+    ]
+    steps = steps.astype({c: "Int64" for c in counts})
+    return [
+        "## HPA 계단별 요약",
+        "",
+        "램프 구간을 뺀 계단 구간(start_s~end_s, 부하 시작 기준 초)에 완료된 요청으로 계산했다.",
+        "레플리카 수는 그 구간의 첫 샘플과 마지막 샘플이다.",
+        "",
+        markdown_table(steps, 2),
+        "",
+    ]
+
+
+def scale_section(scale: pd.DataFrame) -> list[str]:
+    return [
+        "## 스케일 시점",
+        "",
+        "elapsed_s는 부하 시작부터 HPA의 lastScaleTime까지, pod_created_s와 pod_ready_s는 그 시점부터",
+        "새 파드가 만들어지고 Ready가 되기까지 걸린 초다. 원본 시각이 초 단위라 1초 안팎의 오차가 있다.",
+        "",
+        markdown_table(scale, 0),
+        "",
+    ]
+
+
+def build(
+    grid: Path | None,
+    timeline: Path | None,
+    out: Path,
+    title: str,
+    steps: Path | None = None,
+    scale: Path | None = None,
+    conditions: Path | None = None,
+) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     lines = [f"# {title}", "", f"생성: {now}", ""]
-    sources = [str(p) for p in (grid, timeline) if p]
+    sources = [str(p) for p in (grid, timeline, steps, scale) if p]
     lines += ["입력: " + ", ".join(f"`{s}`" for s in sources), ""]
+    if conditions:
+        lines += [conditions.read_text(encoding="utf-8").strip(), ""]
     if grid:
         lines += grid_section(pd.read_csv(grid), out)
+    if steps:
+        lines += steps_section(pd.read_csv(steps))
+    if scale:
+        lines += scale_section(pd.read_csv(scale))
     if timeline:
         lines += timeline_section(pd.read_csv(timeline), out)
     report = out / "REPORT.md"
@@ -188,12 +237,27 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="sllmbench-report")
     parser.add_argument("--grid", type=Path)
     parser.add_argument("--timeline", type=Path)
+    parser.add_argument("--steps", type=Path, help="sllmbench-collect steps 결과")
+    parser.add_argument("--scale", type=Path, help="sllmbench-collect scale 결과")
+    parser.add_argument(
+        "--conditions", type=Path, help="REPORT.md에 그대로 넣을 실행 조건 Markdown"
+    )
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--title", default="cpu-sllm-k8s 측정 리포트")
     args = parser.parse_args(argv)
     if not args.grid and not args.timeline:
         parser.error("--grid 또는 --timeline 중 하나는 필요하다")
-    print(build(args.grid, args.timeline, args.out, args.title))
+    print(
+        build(
+            args.grid,
+            args.timeline,
+            args.out,
+            args.title,
+            steps=args.steps,
+            scale=args.scale,
+            conditions=args.conditions,
+        )
+    )
 
 
 if __name__ == "__main__":
