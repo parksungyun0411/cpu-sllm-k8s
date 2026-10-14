@@ -206,6 +206,7 @@ def steps_section(steps: pd.DataFrame) -> list[str]:
         "## HPA 계단별 요약",
         "",
         "램프 구간을 뺀 계단 구간(start_s~end_s, 부하 시작 기준 초)에 완료된 요청으로 계산했다.",
+        "dropped는 k6가 VU를 제때 못 구해 보내지 않고 건너뛴 요청 수(dropped_iterations)다.",
         "레플리카 수는 그 구간의 첫 샘플과 마지막 샘플, cpu_cores와 throttle_ratio는 구간 안 샘플의",
         "평균(전 파드 합)이다.",
         "",

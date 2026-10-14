@@ -13,6 +13,8 @@ DURATION = "http_req_duration"
 FAILED = "http_req_failed"
 TOKENS = "llm_completion_tokens"
 GEN_TPS = "llm_gen_tokens_per_s"
+# 도착률 부하에서 VU가 모자라 보내지 못하고 건너뛴 요청
+DROPPED = "dropped_iterations"
 
 
 def load(path: str | Path) -> pd.DataFrame:
@@ -27,12 +29,13 @@ def _p95(values: pd.Series) -> float:
 
 
 def window_stats(df: pd.DataFrame, seconds: float) -> dict:
-    """seconds 길이 구간 안에 완료된 요청의 수·오류율·p95·생성 토큰 처리량."""
+    """seconds 길이 구간 안에 완료된 요청의 수·오류율·p95·생성 토큰 처리량과 건너뛴 요청 수."""
     dur = df.loc[df["metric_name"] == DURATION, "metric_value"]
     failed = df.loc[df["metric_name"] == FAILED, "metric_value"]
     tokens = df.loc[df["metric_name"] == TOKENS, "metric_value"].sum()
     return {
         "requests": len(dur),
+        "dropped": int(df.loc[df["metric_name"] == DROPPED, "metric_value"].sum()),
         "rps": len(dur) / seconds,
         "error_rate": float(failed.mean()) if len(failed) else float("nan"),
         "p95_ms": _p95(dur),

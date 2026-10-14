@@ -46,3 +46,19 @@ def test_run_stats(k6):
     assert s["tokens_per_s"] == pytest.approx(70 / 30)
     assert s["gen_tokens_per_s_per_request"] == pytest.approx(6)
     assert not math.isnan(s["tokens_per_s"])
+
+
+def test_window_stats_counts_dropped_iterations(k6):
+    import pandas as pd
+
+    dropped = pd.DataFrame(
+        {
+            "metric_name": ["dropped_iterations"] * 2,
+            "timestamp": [1001, 1002],
+            "metric_value": [1.0, 1.0],
+        }
+    )
+    stats = k6csv.window_stats(pd.concat([k6, dropped]), 30)
+    assert stats["dropped"] == 2
+    assert stats["requests"] == 6
+    assert k6csv.window_stats(k6, 30)["dropped"] == 0

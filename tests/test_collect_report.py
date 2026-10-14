@@ -269,9 +269,10 @@ def test_build_report_with_steps_scale_and_conditions(tmp_path):
     # 실행 조건은 표보다 앞에 그대로 들어간다.
     assert text.index("- 합성 데이터") < text.index("## HPA 계단별 요약")
     assert (
-        "| 1 | 4 | 5 | 15 | 3 | 18.0 | 0.333 | 390 | 2.00 | 1 | 1 | 2 | 1.50 | 0.300 | 1 |" in text
+        "| 1 | 4 | 5 | 15 | 3 | 0 | 18.0 | 0.333 | 390 | 2.00 | 1 | 1 | 2 | 1.50 | 0.300 | 1 |"
+        in text
     )
-    assert "| cooldown | 4 | 35 | 40 | 0 | 0.0 |  |  | 0.00 |  |  |  |  |  |  |" in text
+    assert "| cooldown | 4 | 35 | 40 | 0 | 0 | 0.0 |  |  | 0.00 |  |  |  |  |  |  |" in text
     assert "| 10 | up | 1 | 2 | 1 | 11 |" in text
     assert text.index("## 스케일 시점") < text.index("## HPA 계단 부하 곡선")
 
