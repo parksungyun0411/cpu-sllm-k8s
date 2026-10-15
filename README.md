@@ -42,7 +42,7 @@ CPU 추론은 GPU 서빙과 쿠버네티스 설정이 맞물리는 방식이 다
 |---|---|
 | 추론 런타임 | ![llama.cpp](https://img.shields.io/badge/llama.cpp-server-5B6770) ![GGUF](https://img.shields.io/badge/GGUF-Q4__K__M-5B6770) |
 | 컨테이너·오케스트레이션 | ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?logo=kubernetes&logoColor=white) ![Helm](https://img.shields.io/badge/Helm-0F1689?logo=helm&logoColor=white) ![kind](https://img.shields.io/badge/kind-0.33.0-326CE5?logo=kubernetes&logoColor=white) ![colima](https://img.shields.io/badge/colima-0.10.3-5B6770) |
-| 클라우드(작성만, 미실행) | ![Amazon EKS](https://img.shields.io/badge/Amazon_EKS-FF9900?logo=amazoneks&logoColor=white) ![Amazon ECR](https://img.shields.io/badge/Amazon_ECR-FF9900?logo=amazonaws&logoColor=white) ![eksctl](https://img.shields.io/badge/eksctl-5B6770) |
+| 클라우드(작성만, 배포 예정) | ![Amazon EKS](https://img.shields.io/badge/Amazon_EKS-FF9900?logo=amazoneks&logoColor=white) ![Amazon ECR](https://img.shields.io/badge/Amazon_ECR-FF9900?logo=amazonaws&logoColor=white) ![eksctl](https://img.shields.io/badge/eksctl-5B6770) |
 | CI/CD | ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white) |
 | 부하·관측 | ![k6](https://img.shields.io/badge/k6-7D64FF?logo=k6&logoColor=white) ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white) |
 | 분석·리포트 | ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white) ![pandas](https://img.shields.io/badge/pandas-150458?logo=pandas&logoColor=white) ![Matplotlib](https://img.shields.io/badge/Matplotlib-11557C) |
