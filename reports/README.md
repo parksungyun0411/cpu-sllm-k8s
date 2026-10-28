@@ -30,3 +30,8 @@ reports/
 | [hpa-steps20-20261014T0634Z](hpa-steps20-20261014T0634Z/REPORT.md) | HPA 계단 부하, STEPS 20,40,60,80 |
 
 `hpa-20261014T0452Z`는 실행 도중 호스트가 잠자기에 들어가 결과에서 뺐다(근거: `hpa-20261014T0555Z/host-power.txt`에 있는 14:06~14:53(+0900)의 잠자기 기록).
+
+결과에 넣지 않고 중단한 실행이 두 번 더 있고, 둘 다 원자료를 지워 남아 있지 않다.
+
+- `grid-guaranteed-repeat-20261014T0543Z`: `caffeinate` 없이 시작한 격자 재실행. 첫 칸(threads 2 · limit 2) 도중 중단했고, 이어서 HPA 실행과 격자 재실행을 `caffeinate`를 붙여 다시 돌렸다(`hpa-20261014T0555Z`, `grid-guaranteed-repeat-20261014T0619Z`).
+- `hpa-steps20-20261014T0632Z`: 직전 격자 재실행의 CPU 사용량이 메트릭에 남아 HPA가 레플리카를 2개로 늘려 둔 상태에서 시작한 실행. 부하 시작 직후 중단했고, `scripts/run_hpa.sh`에 레플리카 대기 단계(884ddee)를 넣은 뒤 `hpa-steps20-20261014T0634Z`로 다시 돌렸다.
