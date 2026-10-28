@@ -29,7 +29,7 @@ reports/
 | [grid-guaranteed-repeat-20261014T0619Z](grid-guaranteed-repeat-20261014T0619Z/REPORT.md) | 격자 4칸 재실행(threads 2·4 × limit 2·4), Guaranteed |
 | [hpa-steps20-20261014T0634Z](hpa-steps20-20261014T0634Z/REPORT.md) | HPA 계단 부하, STEPS 20,40,60,80 |
 
-`hpa-20261014T0452Z`는 실행 도중 호스트가 잠자기에 들어가 결과에서 뺐다(근거: `hpa-20261014T0555Z/host-power.txt`에 있는 14:06~14:53(+0900)의 잠자기 기록).
+`hpa-20261014T0452Z`는 실행 도중 호스트가 잠자기에 들어가 결과에서 뺐다(근거: `hpa-20261014T0555Z/host-power.txt`에 있는 14:06~14:53(+0900)의 잠자기 기록. 그중 14:28:43부터 900초는 'Thermal Emergency Sleep'이다).
 
 결과에 넣지 않고 중단한 실행이 두 번 더 있고, 둘 다 원자료를 지워 남아 있지 않다.
 
